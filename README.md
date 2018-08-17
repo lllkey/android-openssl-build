@@ -1,10 +1,16 @@
 # android-openssl-build
 ndk编译openssl，"armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64"
 
-参考：
+* openssl版本：[https://www.openssl.org/source/](https://www.openssl.org/source/)
+* 参考：
 >* [openssl教程](https://wiki.openssl.org/index.php/Android)
 >* [openssl推荐的Setenv-android.sh](https://wiki.openssl.org/images/7/70/Setenv-android.sh)
 >* [ios的openssl编译：https://github.com/palmerc/CMake_OpenSSL](https://github.com/palmerc/CMake_OpenSSL)
+* 目录：
+    * compile-openssl-android.sh：主要运行程序。
+    * Setenv-android-input.sh：需要调用的设置环境变量程序，基于Setenv-android.h。
+    * result：编译完成的结果目录。
+    * openssl_change：修改的openssl中的文件。
 
 ## 运行方法
 * 1 按照本地ndk和openssl路径修改compile-openssl-android.sh中相关定义
@@ -14,7 +20,7 @@ ndk编译openssl，"armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64"
 >* **_OPENSSL_ROOT**：openssl的绝对路径
 >* **_INSTALL_ROOT**：生成的文件的绝对路径
 * 2 运行compile-openssl-android.sh文件
-`./compile-openssl-android.sh`
+```./compile-openssl-android.sh```
 
 ## 主要工作
 ### 文件compile-openssl-android.sh
@@ -100,8 +106,15 @@ ndk编译openssl，"armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64"
 
 *PS：由于mips64使用asm加速找不到合适的mips64r6，总报错，因此修改为no_asm*
 
+### 遇到问题
+* 各种基础头文件找不到，如stdlib.h等头文件
+**解决方法**：ndk中支持的头文件没找到，可以看到报错的那句中-I的目录是否有问题，如果有问题，则查看Configure文件中的-I后的头文件目录是否正确，如果正确，则看到配置的目录中是否有include目录，如果错误，修改sh中定义的目录，或者Configure中的环境变量，参照当前使用的ANDROID_DEV_INCLUDE。
+
+* openssl支持的架构配置错误
+**解决方法**：确定Configure中是否有当前配置的架构
+
 ### 待做
 * 由于时间问题，目前还有一些冗余的变量，还未精简。
-* clang编译还是不通过，需要继续了解
+* 现在clang编译还是不通过，需要继续了解。参考：[ics-openvpn中使用的openssl.cmake](https://github.com/schwabe/ics-openvpn/blob/master/main/src/main/cpp/openssl.cmake)这个是Clang可以编译好的，但是需要固定openssl的各个c文件，如果换openssl版本，则需要重新改，不清楚是否有其他方法更方便一些。
 
 
