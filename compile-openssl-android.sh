@@ -8,16 +8,15 @@
 # _OPENSSL_ROOT=$5
 
 # 需要配置的内容
-# _ANDROID_NDK_ROOT="/Users/lsq/Desktop/work/android/adt-bundle-mac-x86_64-20140702/android-ndk-r8e"
+# _ANDROID_NDK_ROOT="/android-ndk-r8e"
 # _OPENSSL_GCC_VERSION=4.7
 # _ANDROID_API="android-14"
-_ANDROID_NDK_ROOT="/Users/lsq/Desktop/work/android/adt-bundle-mac-x86_64-20140702/android-sdk-macosx/ndk-bundle"
+_ANDROID_NDK_ROOT="/xxx/android-sdk-macosx/ndk-bundle"
 _OPENSSL_GCC_VERSION=4.9
 _ANDROID_API="android-27"
-_OPENSSL_ROOT="/Users/lsq/Downloads/sag-word/openssl_android/未命名文件夹/openssl-1.0.2p"
-_INSTALL_ROOT="/Users/lsq/Downloads/sag-word/openssl_android/未命名文件夹/result"
-BUILD_SHARED=true
-#BUILD_CLANG=true
+_OPENSSL_ROOT="/xxx/openssl_android/openssl-1.0.2p"
+_INSTALL_ROOT="/xxx/openssl_android/result"
+
 TARGET_ARCHITECTURES=( "armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64")
 #TARGET_ARCHITECTURES=( "armeabi-v7a" )
 #TARGET_ARCHITECTURES=( "arm64-v8a" )
@@ -25,6 +24,11 @@ TARGET_ARCHITECTURES=( "armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64")
 #TARGET_ARCHITECTURES=( "x86" )
 #TARGET_ARCHITECTURES=( "mip_64" )
 #TARGET_ARCHITECTURES=( "mip" )
+
+
+
+BUILD_SHARED=true
+#BUILD_CLANG=true
 
 # 
 basepath=$(cd `dirname $0`; pwd)
