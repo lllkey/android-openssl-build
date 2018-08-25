@@ -8,16 +8,17 @@
 # _OPENSSL_ROOT=$5
 
 # 需要配置的内容
-# _ANDROID_NDK_ROOT="/android-ndk-r8e"
+# _ANDROID_NDK_ROOT="/Users/lsq/Desktop/work/android/adt-bundle-mac-x86_64-20140702/android-ndk-r8e"
 # _OPENSSL_GCC_VERSION=4.7
 # _ANDROID_API="android-14"
 _ANDROID_NDK_ROOT="/xxx/android-sdk-macosx/ndk-bundle"
 _OPENSSL_GCC_VERSION=4.9
-_ANDROID_API="android-27"
+_API=21
 _OPENSSL_ROOT="/xxx/openssl_android/openssl-1.0.2p"
-_INSTALL_ROOT="/xxx/openssl_android/result"
-
-TARGET_ARCHITECTURES=( "armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64")
+_INSTALL_ROOT="/xxx/openssl_android/result" 
+BUILD_SHARED=true
+#BUILD_CLANG=true
+TARGET_ARCHITECTURES=( "armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip_64")
 #TARGET_ARCHITECTURES=( "armeabi-v7a" )
 #TARGET_ARCHITECTURES=( "arm64-v8a" )
 #TARGET_ARCHITECTURES=( "x86_64" )
@@ -26,14 +27,11 @@ TARGET_ARCHITECTURES=( "armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64")
 #TARGET_ARCHITECTURES=( "mip" )
 
 
-
-BUILD_SHARED=true
-#BUILD_CLANG=true
-
 # 
 basepath=$(cd `dirname $0`; pwd)
 . $basepath/Setenv-android-input.sh
 
+_ANDROID_API="android-${_API}"
 
 PLATFORM_LIBRARY_PREFIX="lib"
 STATIC_LIBRARY_SUFFIX=".a"
@@ -69,6 +67,7 @@ for TARGET_ARCHITECTURE in "${TARGET_ARCHITECTURES[@]}"; do
     _ANDROID_EABI=${ANDROID_EABI_PREFIX}-${_OPENSSL_GCC_VERSION}
     ANDROID_DEV_INCLUDE_ROOT=${ANDROID_EABI_PREFIX}
     ANDROID_TOOLS="${ANDROID_EABI_PREFIX}-gcc ${ANDROID_EABI_PREFIX}-ranlib ${ANDROID_EABI_PREFIX}-ld"
+    #export ARCH_FLAGS="-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon"
   elif [ "$TARGET_ARCHITECTURE" == "arm64-v8a" ]
   then
     ANDROID_EABI_PREFIX=aarch64-linux-android
@@ -82,7 +81,6 @@ for TARGET_ARCHITECTURE in "${TARGET_ARCHITECTURES[@]}"; do
   then
     _ANDROID_ARCH=arch-x86
     CONFIGURE_SWITCH="android-x86"
-    #CONFIGURE_SWITCH="android-x86"
     _ANDROID_EABI=x86-${_OPENSSL_GCC_VERSION}
     ANDROID_EABI_PREFIX=i686-linux-android
     ANDROID_DEV_INCLUDE_ROOT=${ANDROID_EABI_PREFIX}
@@ -134,22 +132,27 @@ for TARGET_ARCHITECTURE in "${TARGET_ARCHITECTURES[@]}"; do
 
   echo "OpenSSL ${TARGET_ARCHITECTURE} - sourcing options"
   export CFLAGS
-  CFLAGS=" -arch ${TARGET_ARCHITECTURE}"
+  CFLAGS=" -D__ANDROID_API__=$_API "
+  #CFLAGS="${ARCH_FLAGS} -arch ${TARGET_ARCHITECTURE} -D__ANDROID_API__=$_API"
   if [ "${BITCODE_ENABLED}" ]; then
-      CFLAGS+=( "-fembed-bitcode" )
+      CFLAGS+= " -fembed-bitcode " 
   fi
   if [ ! "${BUILD_SHARED}" ]; then
-      CFLAGS+=( "-fvisibility=hidden" )
-      CFLAGS+=( "-fvisibility-inlines-hidden" )
+      CFLAGS+= " -fvisibility=hidden " 
+      CFLAGS+= " -fvisibility-inlines-hidden " 
   fi
+  export CFLAGS=$CFLAGS
+
+  echo "OpenSSL CFLAGS ${CFLAGS}"
 
   OPTIONS=""
   if [ "${BUILD_SHARED}" ]; then
-      OPTIONS+=( "shared " )
+      OPTIONS+=" shared "
   fi
   if [ "$TARGET_ARCHITECTURE" == "x86_64" ]; then
-      OPTIONS+=( "no-asm " )
+      OPTIONS+=" no-asm "
   fi
+  echo "OpenSSL OPTIONS ${OPTIONS}"
 
 
   make clean
@@ -162,9 +165,17 @@ for TARGET_ARCHITECTURE in "${TARGET_ARCHITECTURES[@]}"; do
 
   say_hello ${_ANDROID_NDK_ROOT} ${_ANDROID_EABI} ${_ANDROID_ARCH} ${_ANDROID_API} 
 
-  export ANDROID_DEV_INCLUDE_ROOT=$ANDROID_DEV_INCLUDE_ROOT
+  #export ANDROID_DEV_INCLUDE_ROOT=$ANDROID_DEV_INCLUDE_ROOT
   ANDROID_DEV_INCLUDE="${ANDROID_DEV}/include -I${ANDROID_NDK_ROOT}/sysroot/usr/include -I${ANDROID_NDK_ROOT}/sysroot/usr/include/${ANDROID_DEV_INCLUDE_ROOT}/"
+
+  if [ "${BUILD_CLANG}" ]; then
+    #ANDROID_DEV_INCLUDE+=" -I${ANDROID_NDK_ROOT}/sources/android/support/include --sysroot=${ANDROID_SYSROOT}"
+    ANDROID_DEV_INCLUDE+=" --sysroot=${ANDROID_SYSROOT}"
+  #popd || exit
+  fi
+
   export ANDROID_DEV_INCLUDE=$ANDROID_DEV_INCLUDE
+  export ANDROID_DEV_API="$_API"
 
 
   echo "Android NDK CONFIG PATH: $PATH"
@@ -190,7 +201,7 @@ for TARGET_ARCHITECTURE in "${TARGET_ARCHITECTURES[@]}"; do
 
   echo "OpenSSL ${TARGET_ARCHITECTURE} - validating and installing"
   OPENSSL_INCLUDE_DIR="${SOURCE_DIR}/include"
-  SUCCESS=1
+  SUCCESS=0
   for OPENSSL_LIBRARY in "${OPENSSL_LIBRARIES[@]}"; do
       OPENSSL_LIBRARY_PATH=$( find "${SOURCE_DIR}" -name "${OPENSSL_LIBRARY}" -print | head -n 1 )
 

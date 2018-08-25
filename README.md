@@ -20,6 +20,7 @@ ndk编译openssl，"armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64"
 >* **_OPENSSL_ROOT**：openssl的绝对路径
 >* **_INSTALL_ROOT**：生成的文件的绝对路径
 * 2 运行compile-openssl-android.sh文件
+* 3 将编译结果复制到`/testJniOpenssl/app/src/main/jniLibs`目录中，运行android项目
 ```./compile-openssl-android.sh```
 
 ## 主要工作
@@ -83,6 +84,7 @@ ndk编译openssl，"armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64"
 /Configure文件
 >* 添加x86_64，mips64，64位的时候(由于在ld的时候报错找不到crtbegin_so.o，需要修改为lib64)，ndk中的目录为lib64:/ndk-bundle/platforms/android-27/arch-mips64/usr/lib64
 >* 由于在某一版本之后ndk的include路径修改为sysroot下，因此需要添加环境变量：ANDROID_DEV_INCLUDE，作为include的路径。
+>* 添加在脚本中定义的CFLAGS:`\$(CFLAGS)`
 >* 关于android相关内容改为如下，注释掉原有的内容：
 ```
 # Android: linux-* but without pointers to headers and libs.
@@ -91,20 +93,24 @@ ndk编译openssl，"armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64"
 # "android-armv7","gcc:-march=armv7-a -mandroid -I\$(ANDROID_DEV)/include -B\$(ANDROID_DEV)/lib -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${armv4_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 # "android-mips","gcc:-mandroid -I\$(ANDROID_DEV)/include -B\$(ANDROID_DEV)/lib -O3 -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${mips32_asm}:o32:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 
-"android","gcc: -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+"android","gcc: \$(CFLAGS) -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 
-"android-x86","gcc: -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:".eval{my $asm=${x86_elf_asm};$asm=~s/:elf/:android/;$asm}.":dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+"android-x86","gcc: \$(CFLAGS) -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:".eval{my $asm=${x86_elf_asm};$asm=~s/:elf/:android/;$asm}.":dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 
-"android-armv7","gcc:-march=armv7-a -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${armv4_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+"android-armv7","gcc: \$(CFLAGS) -march=armv7-a -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${armv4_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 
-"android-mips","gcc: -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib -O3 -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${mips32_asm}:o32:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+"android-mips","gcc: \$(CFLAGS) -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib -O3 -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${mips32_asm}:o32:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 
-"android-x86_64","gcc: -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib64 -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:".eval{my $asm=${x86_elf_asm};$asm=~s/:elf/:android/;$asm}.":dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+"android-x86_64","gcc: \$(CFLAGS) -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib64 -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}:".eval{my $asm=${x86_elf_asm};$asm=~s/:elf/:android/;$asm}.":dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 
-"android-mips64","gcc: -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib64 -O3 -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+"android-mips64","gcc: \$(CFLAGS) -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib64 -O3 -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+
 ```
 
 *PS：由于mips64使用asm加速找不到合适的mips64r6，总报错，因此修改为no_asm*
+
+### testJniOpenssl测试demo
+
 
 ### 遇到问题
 * 各种基础头文件找不到，如stdlib.h等头文件
@@ -112,6 +118,45 @@ ndk编译openssl，"armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64"
 
 * openssl支持的架构配置错误
 **解决方法**：确定Configure中是否有当前配置的架构
+
+* 在安卓中调用的时候出现如下问题：
+```
+  FAILED: : && /xxx/android-sdk-macosx/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++  --target=armv7-none-linux-androideabi --gcc-toolchain=/xxx/android-sdk-macosx/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64 --sysroot=/xxx/android-sdk-macosx/ndk-bundle/sysroot -fPIC -isystem /xxx/android-sdk-macosx/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=15 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security  -frtti -fexceptions -O0 -fno-limit-debug-info  -Wl,--exclude-libs,libgcc.a -Wl,--exclude-libs,libatomic.a --sysroot /xxx/android-sdk-macosx/ndk-bundle/platforms/android-15/arch-arm -Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -Wl,--fix-cortex-a8 -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now -shared -Wl,-soname,libnative-lib.so -o ../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libnative-lib.so CMakeFiles/native-lib.dir/src/main/cpp/native-lib.cpp.o CMakeFiles/native-lib.dir/src/main/cpp/openssl-jni.c.o  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a ../../../../src/main/jniLibs/armeabi-v7a/lib/libssl.a -ldl -llog -latomic -lm "/xxx/android-sdk-macosx/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/libgnustl_static.a" && :
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(cryptlib.o):cryptlib.c:function OPENSSL_showfatal: error: undefined reference to 'stderr'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(cryptlib.o):cryptlib.c:function OPENSSL_stderr: error: undefined reference to 'stderr'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function close_console: error: undefined reference to 'stdin'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function close_console: error: undefined reference to 'stderr'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function read_string_inner: error: undefined reference to 'signal'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function read_string_inner: error: undefined reference to 'tcsetattr'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function read_string_inner: error: undefined reference to 'tcsetattr'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function open_console: error: undefined reference to 'tcgetattr'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function open_console: error: undefined reference to 'stdin'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function open_console: error: undefined reference to 'stderr'
+  clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+  ninja: build stopped: subcommand failed.
+```
+**原因**：在ndk15+做了一些改变
+**解决方法**：在CFLAGS中添加：`-D__ANDROID_API__=$_API`
+**参考**：[https://github.com/android-ndk/ndk/issues/445#issuecomment-313322546]（https://github.com/android-ndk/ndk/issues/445#issuecomment-313322546）
+**PS**：此方法在我测试时无用（[添加--deprecated-headers，方法无用](https://github.com/openssl/openssl/issues/3826)）,我这编译调用时会报如下错误：
+```
+usage: make_standalone_toolchain.py [-h] --arch
+                                    {arm,arm64,mips,mips64,x86,x86_64}
+                                    [--api API]
+                                    [--stl {gnustl,libc++,stlport}] [--force]
+                                    [-v]
+                                    [--package-dir PACKAGE_DIR | --install-dir INSTALL_DIR]
+make_standalone_toolchain.py: error: unrecognized arguments: --deprecated-headers
+```
+
+
+* as编译时报错
+```
+cxx-stl/llvm-libc /include/stdexcept:136: error: undefined reference to 'std::logic_error::logic_error(char const*)'
+``` 
+**解决方法**：在cmake中的参数添加：`arguments "-DANDROID_STL=c++_static"`
+**参考**：[android.mk中的解决方法](https://discuss.cocos2d-x.org/t/errors-when-linking-sdkbox-libraries-with-ndk-r13b-clang-and-c--static-stl/33361/19)
+[cmake中的解决方法](https://blog.csdn.net/fpcc/article/details/72820934)
 
 ### 待做
 * 由于时间问题，目前还有一些冗余的变量，还未精简。
