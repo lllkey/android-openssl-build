@@ -110,7 +110,7 @@ ndk编译openssl，"armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64"
 *PS：由于mips64使用asm加速找不到合适的mips64r6，总报错，因此修改为no_asm*
 
 ### testJniOpenssl测试demo
-
+jni调用openssl函数PKCS5_PBKDF2_HMAC，并将结果返回到界面。项目最低sdk版本为21。在某次更新ndk之后，目前是ndk17，发现platforms的各个版本中arch-mips和arch-mips64目录都只剩下了一个文件，没有lib目录（如：/xxx/android-sdk-macosx/ndk-bundle/platforms/android-21/），因此无法再编译mips和arch-mips64的内容了。
 
 ### 遇到问题
 * 各种基础头文件找不到，如stdlib.h等头文件
@@ -149,6 +149,23 @@ usage: make_standalone_toolchain.py [-h] --arch
 make_standalone_toolchain.py: error: unrecognized arguments: --deprecated-headers
 ```
 
+
+* 在安卓中调用的时候出现如下问题：
+``` 
+Error while executing '/xxx/android-sdk-macosx/cmake/3.6.4111459/bin/cmake' with arguments {--build /xxx/workspaceAndroid/testJniOpenssl/app/.externalNativeBuild/cmake/debug/armeabi-v7a --target native-lib}
+  [1/1] Linking CXX shared library ../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libnative-lib.so
+  FAILED: : && /xxx/android-sdk-macosx/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++  --target=armv7-none-linux-androideabi --gcc-toolchain=/xxx/android-sdk-macosx/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64 --sysroot=/xxx/android-sdk-macosx/ndk-bundle/sysroot -fPIC -isystem /xxx/android-sdk-macosx/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=15 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -frtti -fexceptions -O0 -fno-limit-debug-info  -Wl,--exclude-libs,libgcc.a -Wl,--exclude-libs,libatomic.a -nostdlib++ --sysroot /xxx/android-sdk-macosx/ndk-bundle/platforms/android-15/arch-arm -Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -Wl,--fix-cortex-a8 -Wl,--exclude-libs,libunwind.a -L/xxx/android-sdk-macosx/ndk-bundle/sources/cxx-stl/llvm-libc++/libs/armeabi-v7a -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now -shared -Wl,-soname,libnative-lib.so -o ../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libnative-lib.so CMakeFiles/native-lib.dir/src/main/cpp/native-lib.cpp.o CMakeFiles/native-lib.dir/src/main/cpp/openssl-jni.c.o  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a ../../../../src/main/jniLibs/armeabi-v7a/lib/libssl.a -ldl -llog -latomic -lm "/xxx/android-sdk-macosx/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/libgnustl_static.a" && :
+  /xxx/android-sdk-macosx/ndk-bundle/sources/cxx-stl/llvm-libc++/include/stdexcept:136: error: undefined reference to 'std::logic_error::logic_error(char const*)'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function read_string_inner: error: undefined reference to 'signal'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function read_string_inner: error: undefined reference to 'tcsetattr'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function read_string_inner: error: undefined reference to 'tcsetattr'
+  ../../../../src/main/jniLibs/armeabi-v7a/lib/libcrypto.a(ui_openssl.o):ui_openssl.c:function open_console: error: undefined reference to 'tcgetattr'
+  clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+  ninja: build stopped: subcommand failed.
+```
+**原因**：在编译openssl的时候，版本用的是21版本编译，而在android项目中最低版本设置的为15，会报这个错。因为ndk中的
+/xxx/android-sdk-macosx/ndk-bundle/platforms/android-15/目录下没有这两个架构。
+**解决方法**：如果要用arm64-v8a或者x86_64架构，需要将最低版本设置为21，或者暂时不使用这两个架构。
 
 * as编译时报错
 ```
