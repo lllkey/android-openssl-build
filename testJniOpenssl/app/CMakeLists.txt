@@ -12,7 +12,7 @@ set(lib_suffix a)
 #set(lib_type SHARED)
 #set(lib_suffix so)
 
-set(openssl_libs_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/lib)
+set(openssl_libs_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI})
 set(openssl_libs_include_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/include)
 
 

@@ -106,7 +106,6 @@ ndk编译openssl，"armeabi-v7a" "arm64-v8a" "x86" "x86_64" "mip" "mip_64"
 "android-mips64","gcc: \$(CFLAGS) -I\$(ANDROID_DEV_INCLUDE) -B\$(ANDROID_DEV)/lib64 -O3 -Wall::-D_REENTRANT::-ldl:BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL BF_PTR:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 
 ```
-
 *PS：由于mips64使用asm加速找不到合适的mips64r6，总报错，因此修改为no_asm*
 
 ### testJniOpenssl测试demo
@@ -174,6 +173,47 @@ cxx-stl/llvm-libc /include/stdexcept:136: error: undefined reference to 'std::lo
 **解决方法**：在cmake中的参数添加：`arguments "-DANDROID_STL=c++_static"`
 **参考**：[android.mk中的解决方法](https://discuss.cocos2d-x.org/t/errors-when-linking-sdkbox-libraries-with-ndk-r13b-clang-and-c--static-stl/33361/19)
 [cmake中的解决方法](https://blog.csdn.net/fpcc/article/details/72820934)
+
+* 调用时报错：UnsatisfiedLinkError: dlopen failed: library "libcrypto.so.1.0.0" not found
+报错如下：
+```
+java.lang.UnsatisfiedLinkError: dlopen failed: library "libcrypto.so.1.0.0" not found
+     at java.lang.Runtime.loadLibrary(Runtime.java:372)
+     at java.lang.System.loadLibrary(System.java:1076)
+     at com.example.blt.testjniopenssl.OpensslJni.<clinit>(OpensslJni.java:10)
+     at com.example.blt.testjniopenssl.MainActivity.onCreate(MainActivity.java:29)
+     at android.app.Activity.performCreate(Activity.java:6904)
+     at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1136)
+     at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:3266)
+     at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:3415)
+     at android.app.ActivityThread.access$1100(ActivityThread.java:229)
+     at android.app.ActivityThread$H.handleMessage(ActivityThread.java:1821)
+     at android.os.Handler.dispatchMessage(Handler.java:102)
+     at android.os.Looper.loop(Looper.java:148)
+     at android.app.ActivityThread.main(ActivityThread.java:7325)
+     at java.lang.reflect.Method.invoke(Native Method)
+     at com.android.internal.os.ZygoteInit$MethodAndArgsCaller.run(ZygoteInit.java:1321)
+     at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1211)
+```
+**原因**
+如果换成.a就没有问题。这是由于没有加载openssl的库。
+**解决方法**
+需要改为如下调用
+```    
+System.loadLibrary("crypto");     
+System.loadLibrary("ssl");     
+System.loadLibrary("native-lib");
+```
+参考：[https://github.com/frankmorgner/openpace/issues/27](https://github.com/frankmorgner/openpace/issues/27)
+**如果仍然报错可以尝试如下方法**
+[https://stackoverflow.com/questions/33103867/unsatisfiedlinkerror-libcrypto-so-1-0-0-not-found](https://stackoverflow.com/questions/33103867/unsatisfiedlinkerror-libcrypto-so-1-0-0-not-found)
+安装rpl
+```
+brew install rpl
+rpl -R -e .so.1.0.0 "_1_0_0.so" ./libcrypto.so
+```
+调用的时候改为调用crypto_1_0_0，如：`System.loadLibrary("crypto_1_0_0");`
+
 
 ### 待做
 * 由于时间问题，目前还有一些冗余的变量，还未精简。
